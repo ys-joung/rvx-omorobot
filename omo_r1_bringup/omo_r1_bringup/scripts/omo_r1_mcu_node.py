@@ -113,8 +113,9 @@ class OMOR1MiniNode(Node):
       "GYRO" : [0., 0., 0.],
       "POSE" : [0., 0., 0.],
       "BAT" : [0., 0., 0.],
-    }
-    self.ph.incomming_info = ['ODO', 'VW', "POSE", "GYRO"]
+    } # attr dynamically added
+
+    self.ph.incomming_info = ['ODO', 'VW', "POSE", "ACCL", "GYRO"]
     self.ph.set_periodic_info(50)
 
     self.max_lin_vel_x = self.get_parameter_or('/motor/max_lin_vel_x', 
@@ -144,11 +145,11 @@ class OMOR1MiniNode(Node):
     self.pub_pose = self.create_publisher(Pose, 'pose', 10)
 
     # Set Periodic data
-    self.ph.incomming_info = ['ODO', 'VW', "POSE", "GYRO"]
+    # self.ph.incomming_info = ['ODO', 'VW', "POSE", "GYRO"] ## DUPLICATED
     self.ph.update_battery_state()
-    #self.ph.set_periodic_info()
-    sleep(0.01)
-    self.ph.set_periodic_info(50)
+    # self.ph.set_periodic_info()
+    sleep(0.01) ##TODO:: sleep for what?
+    # self.ph.set_periodic_info(50) ## DUPLICATED
     
     # Set timer proc
     self.timerProc = self.create_timer(0.01, self.update_robot)
@@ -255,6 +256,25 @@ class OMOR1MiniNode(Node):
     joint_states.velocity = self.joint.joint_vel
     joint_states.effort = []
     self.pub_JointStates.publish(joint_states)
+  
+  def update_imu(self):
+    imu = Imu()
+    imu.header.frame_id = "base_link"
+
+    imu.orientation = quaternion_from_euler(self.ph._imu[0], self.ph._imu[1], self.ph._imu[2])
+    imu.orientation_covariance = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    imu.angular_velocity.x = self.ph._gyro[0]
+    imu.angular_velocity.y = self.ph._gyro[1]
+    imu.angular_velocity.z = self.ph._gyro[2]
+    imu.angular_velocity_covariance = [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+
+    imu.linear_acceleration.x = self.ph._acc[0]
+    imu.linear_acceleration.y = self.ph._acc[1]
+    imu.linear_acceleration.z = self.ph._acc[2]
+    imu.linear_acceleration_covariance = [0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]
+  
+    self.pub_IMU.publish(imu)
 
   def update_robot(self):
     #raw_data = self.ph.parser()
@@ -269,6 +289,7 @@ class OMOR1MiniNode(Node):
     yaw_imu = self.ph._imu[2]
 
     self.update_odometry(odo_l, odo_r, trans_vel, orient_vel, vel_z)
+    self.update_imu()
     self.updateJointStates(odo_l, odo_r, trans_vel, orient_vel)
     self.updatePoseStates(roll_imu, pitch_imu, yaw_imu)
 

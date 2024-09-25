@@ -24,6 +24,7 @@ class PacketHandler:
       self._wvel = [0.0, 0.0]
       self._gyro = [0.0, 0.0, 0.0]
       self._imu = [0.0, 0.0, 0.0]
+      self._acc = [0.0, 0.0, 0.0]
 
    def set_periodic_info(self, param1):
       for idx, each in enumerate(self.incomming_info):
@@ -66,6 +67,8 @@ class PacketHandler:
                   self._gyro = [float(packet[1]), float(packet[2]), float(packet[3])]
                elif header.startswith('POSE'):
                   self._imu = [float(packet[1]), float(packet[2]), float(packet[3])]
+               elif header.startswith('ACCL'):
+                  self._acc = [float(packet[1]), float(packet[2]), float(packet[3])]
             except:
                pass
    
